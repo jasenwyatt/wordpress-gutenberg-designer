@@ -20,6 +20,12 @@ The user can "Attempt recovery," but recovery often strips styling or resets con
 5. **Version-specific attributes used on an older WordPress target** — e.g., `aspectRatio` on `core/image` was added in 6.5; using it on 6.4 breaks.
 6. **Custom CSS classes without registered block styles** — some blocks tolerate this, others warn.
 7. **Preset references that do not exist in the active theme** — `has-accent-color` without an `accent` color in `theme.json` is usually harmless but can cause class-only styling gaps.
+8. **`fontFamily` or `fontSize` inside `style.typography`** — these are top-level attributes in Gutenberg, not nested style properties. The `save()` function reads `attributes.fontFamily`, not `attributes.style.typography.fontFamily`. When the editor loads this, `save()` generates HTML without the font family, but the saved HTML has it — mismatch.
+9. **Raw hex colors in `style.color.text` or `style.color.background`** — use `textColor`/`backgroundColor` top-level attributes with preset slugs instead. The `save()` function generates `has-{slug}-color` classes from top-level attributes, but serializes inline `style="color:#..."` differently from `style.color.text` objects, causing mismatch.
+10. **Deprecated `minHeight` / `minHeightUnit` top-level attributes** — in 6.3+, use `style.dimensions.minHeight` instead. The old top-level attributes are migrated on re-save, which triggers a validation warning.
+11. **Inline `style` attributes on `<a>` tags inside blocks** — these are not part of the block's saved attributes. Gutenberg's `save()` function doesn't know about them, and they may be stripped on re-save.
+12. **Unregistered block style classes (`is-style-*`)** — if `register_block_style()` was not called in `functions.php`, the class has no effect and may trigger a validation warning on some blocks.
+13. **Raw hex in `style.border.color`** — use `borderColor` top-level attribute with a preset slug instead.
 
 ## Version compatibility matrix
 
@@ -189,7 +195,10 @@ When targeting 6.6+, prefer the string form for simplicity unless you need axis-
 - `url` is the background image URL. It **is** an attribute.
 - `dimRatio` is integer `0`–`100`.
 - `overlayColor` references a palette slug.
-- `minHeight` and `minHeightUnit` are separate attributes in older versions; in 6.3+ they are merged into `dimensions.minHeight` in `style`.
+- `minHeight` and `minHeightUnit` are **deprecated** in 6.3+. Use `style.dimensions.minHeight` instead.
+- **Deprecated (do not use):** `{"minHeight":640,"minHeightUnit":"px"}`
+- **Correct (6.3+):** `{"style":{"dimensions":{"minHeight":"640px"}}}`
+- `customGradient` may be used for gradient overlays.
 
 ### `core/columns` / `core/column`
 
@@ -215,6 +224,83 @@ When targeting 6.6+, prefer the string form for simplicity unless you need axis-
 - `iconColorValue` and `iconBackgroundColorValue` are raw hex strings. Prefer preset references when possible.
 - `openInNewTab` is boolean.
 
+## Top-level attributes vs style properties
+
+Several Gutenberg attributes are **top-level** and should never be nested inside `style.typography` or `style.color`:
+
+| Property | Correct (top-level) | Incorrect (nested in style) |
+| --- | --- | --- |
+| `fontSize` | `"fontSize":"display"` | `"style":{"typography":{"fontSize":"..."}}` |
+| `fontFamily` | `"fontFamily":"display"` | `"style":{"typography":{"fontFamily":"..."}}` |
+| `textColor` | `"textColor":"accent"` | `"style":{"color":{"text":"..."}}` |
+| `backgroundColor` | `"backgroundColor":"bg"` | `"style":{"color":{"background":"..."}}` |
+| `borderColor` | `"borderColor":"border"` | `"style":{"border":{"color":"..."}}` |
+| `minHeight` | `"style":{"dimensions":{"minHeight":"640px"}}` | `"minHeight":640,"minHeightUnit":"px"` |
+
+**Why this matters:** Gutenberg's `save()` function reads top-level attributes and generates corresponding CSS classes (`has-display-font-size`, `has-accent-color`). When the same value is placed in `style.typography.fontSize` or `style.color.text`, `save()` doesn't read it from there, so the saved HTML has an inline style that `save()` wouldn't generate — mismatch → "unexpected or invalid content."
+
+### Correct vs incorrect examples
+
+**fontSize — correct:**
+```html
+<!-- wp:heading {"fontSize":"display"} -->
+<h2 class="wp-block-heading has-display-font-size">...</h2>
+<!-- /wp:heading -->
+```
+
+**fontSize — incorrect (triggers save() mismatch):**
+```html
+<!-- wp:heading {"style":{"typography":{"fontSize":"clamp(2.5rem,1.8rem+3vw,4.5rem)"}}} -->
+<h2 class="wp-block-heading" style="font-size:clamp(2.5rem,1.8rem+3vw,4.5rem)">...</h2>
+<!-- /wp:heading -->
+```
+
+**textColor — correct:**
+```html
+<!-- wp:heading {"textColor":"white"} -->
+<h2 class="wp-block-heading has-white-color has-text-color">...</h2>
+<!-- /wp:heading -->
+```
+
+**textColor — incorrect (raw hex in style.color.text triggers save() mismatch):**
+```html
+<!-- wp:heading {"style":{"color":{"text":"#ffffff"}}} -->
+<h2 class="wp-block-heading has-text-color" style="color:#ffffff">...</h2>
+<!-- /wp:heading -->
+```
+
+**minHeight — correct (6.3+):**
+```html
+<!-- wp:cover {"style":{"dimensions":{"minHeight":"640px"}}} -->
+<div class="wp-block-cover" style="min-height:640px">...</div>
+<!-- /wp:cover -->
+```
+
+**minHeight — incorrect (deprecated):**
+```html
+<!-- wp:cover {"minHeight":640,"minHeightUnit":"px"} -->
+<div class="wp-block-cover" style="min-height:640px">...</div>
+<!-- /wp:cover -->
+```
+
+## Inline styles on links
+
+Do not use `style="..."` on `<a>` tags inside block markup:
+
+```html
+<!-- Bad: inline style on <a> is not a block attribute -->
+<a href="#news" style="color:var(--wp--preset--color--accent);text-transform:uppercase">...</a>
+```
+
+Instead, apply styling at the block level or use CSS classes:
+
+```html
+<!-- Good: block-level textColor + CSS class for extra styling -->
+<!-- wp:paragraph {"textColor":"accent","className":"es-link-uppercase"} -->
+<p class="has-accent-color has-text-color es-link-uppercase"><a href="#news">...</a></p>
+<!-- /wp:paragraph -->
+```
+
 ## Custom CSS classes
 
 Adding `className` to a core block is usually safe, but:
@@ -235,14 +321,19 @@ Before calling a pattern complete, verify every item on a real WordPress site:
 
 - [ ] Pattern loads in the editor without the "unexpected or invalid content" warning.
 - [ ] All preset colors, font sizes, and spacing values render correctly.
-- [ ] Custom classes appear in the DOM and match the intended scoped CSS.
+- [ ] Custom classes appear in the DOM and match intended scoped CSS.
 - [ ] Responsive behavior matches the comp (stack order, hiding, breakpoints).
 - [ ] Images have correct aspect ratios or scale behavior.
 - [ ] Buttons are editable and links are clickable.
 - [ ] Query loops populate with the correct post type and ordering.
-- [ ] No inline `style` attributes duplicate preset classes (e.g., both `has-accent-color` and `style="color:#D66A3A"`).
+- [ ] No inline `style` attributes duplicate preset classes (e.g., both `has-accent-color` and `style="color:#c4342b"`).
 - [ ] Heading hierarchy makes sense for accessibility (`h1` → `h2` → `h3`).
 - [ ] The pattern can be inserted from the pattern inserter and works in multiple contexts (page, post, template).
+- [ ] **No `fontFamily` or `fontSize` is nested inside `style.typography` — they must be top-level attributes.**
+- [ ] **No raw hex colors exist in `style.color.text` or `style.color.background` — use `textColor`/`backgroundColor` presets.**
+- [ ] **No deprecated `minHeight`/`minHeightUnit` top-level attributes — use `style.dimensions.minHeight`.**
+- [ ] **No inline `style` on `<a>` tags inside blocks — use block-level attributes or CSS classes.**
+- [ ] **All `is-style-*` classes have matching `register_block_style()` calls in `functions.php`.**
 
 ## Escalation: when to add a `parse_blocks` test
 

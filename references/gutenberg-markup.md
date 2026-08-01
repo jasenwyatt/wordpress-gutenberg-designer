@@ -137,6 +137,86 @@ Good:
 
 Do not use object with only `left` or only `top` — it is invalid in all versions.
 
+### 6. `fontFamily` or `fontSize` inside `style.typography` (CRITICAL)
+
+Bad — `save()` reads top-level `fontFamily`, not `style.typography.fontFamily`:
+```html
+<!-- wp:site-title {"style":{"typography":{"fontFamily":"var:preset:font-family:display"}}} -->
+```
+
+Good:
+```html
+<!-- wp:site-title {"fontFamily":"display"} -->
+```
+
+Same for `fontSize`:
+```html
+<!-- Bad -->
+<!-- wp:heading {"style":{"typography":{"fontSize":"clamp(2.5rem,1.8rem+3vw,4.5rem)"}}} -->
+
+<!-- Good -->
+<!-- wp:heading {"fontSize":"display"} -->
+```
+
+### 7. Raw hex in `style.color.text` or `style.color.background` (CRITICAL)
+
+Bad — `save()` generates `has-{slug}-color` from top-level `textColor`, not from `style.color.text`:
+```html
+<!-- wp:heading {"style":{"color":{"text":"#ffffff"}}} -->
+<h2 class="wp-block-heading has-text-color" style="color:#ffffff">...</h2>
+<!-- /wp:heading -->
+```
+
+Good:
+```html
+<!-- wp:heading {"textColor":"white"} -->
+<h2 class="wp-block-heading has-white-color has-text-color">...</h2>
+<!-- /wp:heading -->
+```
+
+Always add frequently-used colors (especially `#ffffff`) to `theme.json` palette so they can be referenced by slug.
+
+### 8. Deprecated `minHeight`/`minHeightUnit` top-level attributes (HIGH)
+
+Bad — deprecated in 6.3+:
+```html
+<!-- wp:cover {"minHeight":640,"minHeightUnit":"px"} -->
+```
+
+Good — use `style.dimensions.minHeight`:
+```html
+<!-- wp:cover {"style":{"dimensions":{"minHeight":"640px"}}} -->
+```
+
+### 9. Inline `style` on `<a>` tags inside blocks (MEDIUM)
+
+Bad — inline styles on `<a>` are not block attributes and may be stripped:
+```html
+<a href="#news" style="color:var(--wp--preset--color--accent);text-transform:uppercase">...</a>
+```
+
+Good — use block-level attributes or CSS classes:
+```html
+<!-- wp:paragraph {"textColor":"accent","className":"es-link-uppercase"} -->
+<p class="has-accent-color has-text-color es-link-uppercase"><a href="#news">...</a></p>
+<!-- /wp:paragraph -->
+```
+
+### 10. Unregistered `is-style-*` classes (MEDIUM)
+
+Bad — class has no effect without registration:
+```html
+<!-- wp:button {"className":"is-style-outline"} -->
+```
+
+Good — register in `functions.php`:
+```php
+register_block_style( 'core/button', [
+    'name'  => 'outline',
+    'label' => __( 'Outline', 'textdomain' ),
+] );
+```
+
 ## Preset usage
 
 Prefer WordPress preset syntax in style values:

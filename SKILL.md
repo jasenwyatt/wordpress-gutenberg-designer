@@ -68,9 +68,14 @@ Use `assets/theme-json.template.json` as a safe starting structure, not as a sub
 9. Gutenberg block comments and their saved HTML must be structurally valid.
 10. **Do not generate attributes introduced in a WordPress version later than `minimumWordPressVersion`.** If the comp requires a newer feature, document it as a custom-block candidate or scoped-CSS fallback.
 11. **Do not duplicate a preset class with an inline `style` for the same property** (e.g., both `has-display-font-size` class and `style="font-size:..."`). This triggers Gutenberg's `save()` validation mismatch.
-12. Static preview HTML is a visual projection only. It is never the canonical WordPress artifact.
-13. Preserve heading order, landmarks, readable contrast, keyboard access, meaningful image alt guidance, and reduced-motion behavior.
-14. Never claim pixel-perfect fidelity when the comp omits responsive states, font files, asset crops, or content behavior.
+12. **Do not nest `fontFamily` or `fontSize` inside `style.typography`.** They are top-level block attributes. `save()` reads `attributes.fontFamily`, not `attributes.style.typography.fontFamily`.
+13. **Do not use raw hex colors in `style.color.text` or `style.color.background`.** Use top-level `textColor` and `backgroundColor` attributes with preset slugs. Add `#ffffff` and other common colors to the palette.
+14. **Do not use deprecated `minHeight`/`minHeightUnit` top-level attributes.** Use `style.dimensions.minHeight` instead (e.g., `"style":{"dimensions":{"minHeight":"640px"}}`).
+15. **Do not add inline `style` attributes on `<a>` tags inside block markup.** Inline styles on links are not saved as block attributes and may be stripped on re-save.
+16. **Register all `is-style-*` classes in `functions.php` via `register_block_style()`**, or the class has no effect and may trigger a validation warning.
+17. Static preview HTML is a visual projection only. It is never the canonical WordPress artifact.
+18. Preserve heading order, landmarks, readable contrast, keyboard access, meaningful image alt guidance, and reduced-motion behavior.
+19. Never claim pixel-perfect fidelity when the comp omits responsive states, font files, asset crops, or content behavior.
 
 ## Workflow
 
@@ -198,6 +203,11 @@ Then perform this manual WordPress checklist on a real site with the generated t
 - [ ] No raw hex colors exist in block markup (all colors reference `theme.json` presets).
 - [ ] All referenced presets (`var:preset|color|...`, `var:preset|spacing|...`, etc.) exist in `theme.json`.
 - [ ] No inline `style` duplicates a preset class for the same property (e.g., `has-display-font-size` + `style="font-size:..."`).
+- [ ] **No `fontFamily` or `fontSize` nested inside `style.typography` — they must be top-level attributes.**
+- [ ] **No raw hex in `style.color.text` or `style.color.background` — use `textColor`/`backgroundColor` presets.**
+- [ ] **No deprecated `minHeight`/`minHeightUnit` — use `style.dimensions.minHeight`.**
+- [ ] **No inline `style` on `<a>` tags inside blocks.**
+- [ ] **All `is-style-*` classes have matching `register_block_style()` in `functions.php`.**
 
 **Visual checks (editor + frontend):**
 - [ ] All preset colors, font sizes, and spacing values render correctly in both editor and frontend.

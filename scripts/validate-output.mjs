@@ -127,7 +127,9 @@ if (theme && theme.settings) {
 const SELF_CLOSING_BLOCKS = new Set([
   'latest-posts', 'archives', 'categories', 'calendar', 'rss', 'search',
   'social-link', 'page-list', 'spacer', 'separator', 'more',
-  'comments-title', 'comments-count'
+  'comments-title', 'comments-count', 'template-part',
+  'site-title', 'site-logo', 'site-tagline', 'query-title', 'term-description',
+  'navigation-link'
 ]);
 
 const CONTAINER_BLOCKS = new Set([
@@ -378,6 +380,85 @@ for (const file of patternFiles) {
     }
   }
 
+  // Check fontFamily inside style.typography (should be top-level attribute)
+  const fontFamilyInStyleMatches = text.match(/<!--\s*wp:([a-z0-9-]+)\s+\{([^]*?)\}\s*-->/g) || [];
+  for (const ffsm of fontFamilyInStyleMatches) {
+    const hasTopLevelFontFamily = /"fontFamily"\s*:/.test(ffsm);
+    const hasStyleFontFamily = /"style"\s*:\s*\{[^}]*"typography"\s*:\s*\{[^}]*"fontFamily"/.test(ffsm);
+    if (!hasTopLevelFontFamily && hasStyleFontFamily) {
+      error(`${relative} uses fontFamily inside style.typography — must be a top-level block attribute, not nested in style. Move "fontFamily" to the top of the block attributes.`);
+    }
+  }
+
+  // Check for deprecated minHeight / minHeightUnit on cover/group (should use style.dimensions.minHeight)
+  const minHeightMatches = text.match(/<!--\s*wp:([a-z0-9-]+)\s+\{([^]*?)\}\s*-->/g) || [];
+  for (const mhm of minHeightMatches) {
+    const hasMinHeight = /"minHeight"\s*:/.test(mhm);
+    const hasMinHeightUnit = /"minHeightUnit"\s*:/.test(mhm);
+    const hasStyleDimensions = /"style"\s*:\s*\{[^}]*"dimensions"\s*:\s*\{[^}]*"minHeight"/.test(mhm);
+    if ((hasMinHeight || hasMinHeightUnit) && !hasStyleDimensions) {
+      warn(`${relative} uses deprecated top-level "minHeight"/"minHeightUnit" — use "style.dimensions.minHeight" instead (e.g., "style":{"dimensions":{"minHeight":"640px"}}).`);
+    }
+  }
+
+  // Check for raw hex in style.color.text / style.color.background (should use textColor/backgroundColor presets)
+  const styleColorMatches = text.match(/<!--\s*wp:([a-z0-9-]+)\s+\{([^]*?)\}\s*-->/g) || [];
+  for (const scm of styleColorMatches) {
+    const hasTextColorAttr = /"textColor"\s*:/.test(scm);
+    const hasBgColorAttr = /"backgroundColor"\s*:/.test(scm);
+    const hasStyleColorText = /"style"\s*:\s*\{[^}]*"color"\s*:\s*\{[^}]*"text"\s*:\s*"#[0-9a-fA-F]{3,8}"/.test(scm);
+    const hasStyleColorBg = /"style"\s*:\s*\{[^}]*"color"\s*:\s*\{[^}]*"background"\s*:\s*"#[0-9a-fA-F]{3,8}"/.test(scm);
+
+    if (!hasTextColorAttr && hasStyleColorText) {
+      error(`${relative} uses raw hex in style.color.text — must use a "textColor" preset reference instead. Add the color to theme.json palette and use "textColor":"<slug>".`);
+    }
+    if (!hasBgColorAttr && hasStyleColorBg) {
+      error(`${relative} uses raw hex in style.color.background — must use a "backgroundColor" preset reference instead. Add the color to theme.json palette and use "backgroundColor":"<slug>".`);
+    }
+  }
+
+  // Check for inline style= attributes on <a> tags inside block markup
+  const anchorStyleMatches = text.match(/<a\s[^>]*style="[^"]*"/g) || [];
+  for (const asm of anchorStyleMatches) {
+    warn(`${relative} has inline style="..." on an <a> tag inside block markup: ${asm.substring(0, 80)}... Inline styles on <a> are not part of the block's saved attributes and may be stripped on re-save. Use block-level style attributes instead.`);
+  }
+
+  // Check for unregistered block style classes (is-style-* without matching register_block_style)
+  // Note: this is a heuristic — we can't know what styles are registered, but we can flag common ones
+  const blockStyleMatches = text.match(/className\s*:\s*"is-style-([a-z0-9-]+)"/g) || [];
+  for (const bsm of blockStyleMatches) {
+    const styleName = bsm.match(/is-style-([a-z0-9-]+)/)?.[1];
+    if (styleName) {
+      warn(`${relative} uses block style class "is-style-${styleName}" — ensure register_block_style('core/<block>', {name:'${styleName}',...}) is called in functions.php, or the class will have no effect and may trigger a validation warning.`);
+    }
+  }
+
+  // Check for fontSize inside style.typography (should be top-level attribute)
+  const fontSizeInStyleMatches = text.match(/<!--\s*wp:([a-z0-9-]+)\s+\{([^]*?)\}\s*-->/g) || [];
+  for (const fssm of fontSizeInStyleMatches) {
+    const hasTopLevelFontSize = /"fontSize"\s*:/.test(fssm);
+    const hasStyleFontSize = /"style"\s*:\s*\{[^}]*"typography"\s*:\s*\{[^}]*"fontSize"/.test(fssm);
+    if (!hasTopLevelFontSize && hasStyleFontSize) {
+      error(`${relative} uses fontSize inside style.typography — must be a top-level block attribute. Move "fontSize" to the top of the block attributes.`);
+    }
+  }
+
+  // Check for border inside style.border with raw hex (should use borderColor preset)
+  const borderStyleMatches = text.match(/<!--\s*wp:([a-z0-9-]+)\s+\{([^]*?)\}\s*-->/g) || [];
+  for (const bsm of borderStyleMatches) {
+    const hasBorderColorAttr = /"borderColor"\s*:/.test(bsm);
+    const hasStyleBorderColor = /"style"\s*:\s*\{[^}]*"border"\s*:\s*\{[^}]*"color"\s*:\s*"#[0-9a-fA-F]{3,8}"/.test(bsm);
+    if (!hasBorderColorAttr && hasStyleBorderColor) {
+      error(`${relative} uses raw hex in style.border.color — must use a "borderColor" preset reference instead.`);
+    }
+  }
+
+  // Check for raw inline style="color:#..." on block wrapper divs (not in comment attributes)
+  const inlineColorStyleMatches = text.match(/<div\s[^>]*style="[^"]*color\s*:\s*#[0-9a-fA-F]{3,8}/g) || [];
+  for (const icsm of inlineColorStyleMatches) {
+    warn(`${relative} has raw hex color in inline style attribute on wrapper div. Consider using textColor/backgroundColor presets or scoped CSS.`);
+  }
+
   ok(`Checked ${relative}`);
 }
 
@@ -436,6 +517,68 @@ for (const file of [...templateFiles, ...partFiles]) {
   const rawColors = text.match(/#[0-9a-fA-F]{3,8}\b/g) || [];
   if (rawColors.length) {
     warn(`${relative} raw hex colors: ${[...new Set(rawColors)].join(', ')}.`);
+  }
+
+  // Check for raw hex in style.color.text / style.color.background (should use textColor/backgroundColor presets)
+  const styleColorMatches2 = text.match(/<!--\s*wp:([a-z0-9-]+)\s+\{([^]*?)\}\s*-->/g) || [];
+  for (const scm of styleColorMatches2) {
+    const hasTextColorAttr = /"textColor"\s*:/.test(scm);
+    const hasBgColorAttr = /"backgroundColor"\s*:/.test(scm);
+    const hasStyleColorText = /"style"\s*:\s*\{[^}]*"color"\s*:\s*\{[^}]*"text"\s*:\s*"#[0-9a-fA-F]{3,8}"/.test(scm);
+    const hasStyleColorBg = /"style"\s*:\s*\{[^}]*"color"\s*:\s*\{[^}]*"background"\s*:\s*"#[0-9a-fA-F]{3,8}"/.test(scm);
+
+    if (!hasTextColorAttr && hasStyleColorText) {
+      error(`${relative} uses raw hex in style.color.text — must use a "textColor" preset reference instead.`);
+    }
+    if (!hasBgColorAttr && hasStyleColorBg) {
+      error(`${relative} uses raw hex in style.color.background — must use a "backgroundColor" preset reference instead.`);
+    }
+  }
+
+  // Check fontFamily inside style.typography (should be top-level attribute)
+  const fontFamilyInStyleMatches2 = text.match(/<!--\s*wp:([a-z0-9-]+)\s+\{([^]*?)\}\s*-->/g) || [];
+  for (const ffsm of fontFamilyInStyleMatches2) {
+    const hasTopLevelFontFamily = /"fontFamily"\s*:/.test(ffsm);
+    const hasStyleFontFamily = /"style"\s*:\s*\{[^}]*"typography"\s*:\s*\{[^}]*"fontFamily"/.test(ffsm);
+    if (!hasTopLevelFontFamily && hasStyleFontFamily) {
+      error(`${relative} uses fontFamily inside style.typography — must be a top-level block attribute.`);
+    }
+  }
+
+  // Check for deprecated minHeight / minHeightUnit
+  const minHeightMatches2 = text.match(/<!--\s*wp:([a-z0-9-]+)\s+\{([^]*?)\}\s*-->/g) || [];
+  for (const mhm of minHeightMatches2) {
+    const hasMinHeight = /"minHeight"\s*:/.test(mhm);
+    const hasMinHeightUnit = /"minHeightUnit"\s*:/.test(mhm);
+    const hasStyleDimensions = /"style"\s*:\s*\{[^}]*"dimensions"\s*:\s*\{[^}]*"minHeight"/.test(mhm);
+    if ((hasMinHeight || hasMinHeightUnit) && !hasStyleDimensions) {
+      warn(`${relative} uses deprecated top-level "minHeight"/"minHeightUnit" — use "style.dimensions.minHeight" instead.`);
+    }
+  }
+
+  // Check for inline style= attributes on <a> tags inside block markup
+  const anchorStyleMatches2 = text.match(/<a\s[^>]*style="[^"]*"/g) || [];
+  for (const asm of anchorStyleMatches2) {
+    warn(`${relative} has inline style="..." on an <a> tag inside block markup: ${asm.substring(0, 80)}... Inline styles on <a> are not part of the block's saved attributes and may be stripped on re-save.`);
+  }
+
+  // Check for unregistered block style classes
+  const blockStyleMatches2 = text.match(/className\s*:\s*"is-style-([a-z0-9-]+)"/g) || [];
+  for (const bsm of blockStyleMatches2) {
+    const styleName = bsm.match(/is-style-([a-z0-9-]+)/)?.[1];
+    if (styleName) {
+      warn(`${relative} uses block style class "is-style-${styleName}" — ensure register_block_style('core/<block>', {name:'${styleName}',...}) is called in functions.php.`);
+    }
+  }
+
+  // Check for fontSize inside style.typography
+  const fontSizeInStyleMatches2 = text.match(/<!--\s*wp:([a-z0-9-]+)\s+\{([^]*?)\}\s*-->/g) || [];
+  for (const fssm of fontSizeInStyleMatches2) {
+    const hasTopLevelFontSize = /"fontSize"\s*:/.test(fssm);
+    const hasStyleFontSize = /"style"\s*:\s*\{[^}]*"typography"\s*:\s*\{[^}]*"fontSize"/.test(fssm);
+    if (!hasTopLevelFontSize && hasStyleFontSize) {
+      error(`${relative} uses fontSize inside style.typography — must be a top-level block attribute.`);
+    }
   }
 
   ok(`Checked ${relative}`);

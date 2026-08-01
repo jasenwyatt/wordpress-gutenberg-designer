@@ -4,7 +4,7 @@ description: Use this plugin when the user provides a comp, screenshot, mockup, 
 license: MIT
 metadata:
   author: Jasen Wyatt
-  version: 0.2.0
+  version: 0.3.0
 od:
   scenario: import
   mode: prototype
@@ -188,17 +188,151 @@ The preview must:
 - include desktop and responsive behavior,
 - avoid becoming an unrelated static implementation.
 
-### 8. Critique and verify
+### 8. Critique and verify (MACHINE + LLM HYBRID)
 
-Before calling the output complete, run the structural validator and perform a manual WordPress verification.
+This is the quality gate. The critique must combine **machine validation** (structural checks) with **LLM review** (semantic checks). Neither alone is sufficient.
 
-Run the validator when available:
+#### Step — 1: Run the structural validator (CRITICAL)
+
+Before any scoring, run the validator on the generated output directory:
 
 ```bash
 node scripts/validate-output.mjs <generated-output-directory>
 ```
 
-Then perform this manual WordPress checklist on a real site with the generated theme active:
+Where `<generated-output-directory>` is the folder containing `wordpress/`, `report.md`, etc. If the validator is not available at that path, search for `validate-output.mjs` in the plugin directory or skip to Step 2.
+
+Capture the output. Extract:
+- `errorCount`: number of ERROR lines
+- `warningCount`: number of WARN lines
+- Specific error messages (copy them verbatim)
+
+#### Step — 2: Machine-validation score
+
+Calculate a base score from the validator output:
+
+| Error count | Base score | Meaning |
+|-------------|-----------|---------|
+| 0           | 4         | Structurally clean |
+| 1–3        | 3         | Minor structural issues |
+| 4–6        | 2         | Moderate issues; some patterns may break |
+| 7+          | 1         | Severe; many blocks will fail in editor |
+| Validator not available | 3 | Proceed with LLM-only critique |
+
+**Wipe 1 point from the base score** if ANY of these critical errors appear:
+- `style.typography.color` does not exist
+- `wp-block-paragraph` on `<p>`
+- Missing `has-custom-font-size` on button with `fontSize`
+- Missing `has-border-color` on button with border color
+- Missing `has-alpha-channel-opacity` on separator
+- Raw hex in `style.color.text` without `textColor` preset
+- `fontFamily` nested in `style.typography`
+- Container block using self-closing syntax (`/-->`)
+- Unmatched block delimiters
+
+#### Step — 3: LLM semantic critique
+
+Review the generated markup for issues the validator cannot catch:
+
+**Hierarchy and accessibility:**
+- Heading levels descend logically (no `h1` → `h3` skip)
+- Landmark regions (`header`, `main`, `footer`, `section`) are used correctly
+- Contrast ratios are plausible based on token values
+- Alt text is present for images or noted as decorative
+
+**Pattern effectiveness:**
+- Patterns are actually reusable (no hardcoded content that can't be edited)
+- Query loops target the correct post type
+- Template parts (`header.html`, `footer.html`) are wired into templates
+- Preview HTML roughly matches the comp layout
+
+**Token fidelity:**
+- Colors in markup match the extracted palette
+- Font sizes correspond to the typography scale
+- Spacing values match the comp rhythm
+
+#### Step — 4: Combine and assign final score
+
+```
+finalScore = machineBaseScore
+if (LLM finds semantic issues): finalScore -= 1
+if (LLM finds major accessibility problems): finalScore -= 1
+finalScore = clamp(finalScore, 1, 5)
+```
+
+**Score meanings:**
+- **5**: Flawless. Zero errors, zero warnings, semantic review clean. Rare.
+- **4**: Good. Zero errors, minor warnings only. Semantic review clean. Acceptable for delivery.
+- **3**: Fair. 1–3 structural errors or minor semantic issues. Fix before delivery if possible.
+- **2**: Poor. 4+ structural errors or major semantic issues. Requires another generate loop.
+- **1**: Broken. Severe structural failures or critical semantic issues. Must regenerate.
+
+#### Step — 5: Write critique report
+
+Write a `critique.md` file in the output directory with this structure:
+
+```markdown
+# Critique Report
+
+Date: <YYYY-MM-DD HH:MM>
+Iteration: <N>
+
+## Machine Validation
+```
+<paste full validator output here>
+```
+
+Validator error count: <N>
+Validator warning count: <N>
+Machine base score: <1-4>
+
+## Semantic Review
+
+| Check | Status | Notes |
+|-------|--------|-------|
+| Heading hierarchy | ✓/✗ | |
+| Landmark usage | ✓/✗ | |
+| Contrast | ✓/✗ | |
+| Pattern reusability | ✓/✗ | |
+| Query loop correctness | ✓/✗ | |
+| Token fidelity | ✓/✗ | |
+
+## Issues Found
+
+1. <Issue description with file path>
+2. <Issue description with file path>
+...
+
+## Recommended Fixes
+
+1. <Specific action>
+2. <Specific action>
+...
+
+## Final Score
+
+**<1-5>**
+
+- Machine base: <score>
+- Semantic deductions: <N>
+- Final: <score>
+```
+
+#### Step — 6: Gate on score
+
+- If **finalScore >= 4**: Proceed to final delivery. Update `report.md` with "Validation passed on iteration N."
+- If **finalScore == 3**: Attempt to fix the specific errors listed in `critique.md`. Run validator again. If still 3 after one fix attempt, proceed with warnings documented.
+- If **finalScore <= 2**: Do NOT deliver. Return to the generate stage with the `critique.md` as context. The agent should:
+  1. Read the specific errors
+  2. Fix only the failing files (do not regenerate everything)
+  3. Re-run the validator
+  4. Score again
+
+**Maximum iterations:** 3. If score < 4 after 3 iterations, deliver what exists with a prominent `KNOWN_ISSUES.md` file listing all remaining errors.
+
+#### Step — 7: Manual WordPress checklist (if applicable)
+
+If you have access to a running WordPress instance with the generated theme active, perform these additional checks:
 
 **Structural checks (editor):**
 - [ ] Every pattern loads in the block editor without "unexpected or invalid content" warnings.
@@ -238,7 +372,7 @@ Then perform this manual WordPress checklist on a real site with the generated t
 node scripts/validate-output.mjs <generated-output-directory>
 ```
 
-Fix all errors before final delivery. Warnings may remain only when explained in `report.md` with a clear remediation plan.
+Fix all errors before final delivery. Warnings may remain only when explained in `report.md` or `KNOWN_ISSUES.md` with a clear remediation plan.
 
 For high-stakes handoffs, add a `parse_blocks()` test in the target WordPress environment (see `references/block-validation.md` §Escalation).
 

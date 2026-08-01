@@ -3,7 +3,7 @@
   "specVersion": "1.0.0",
   "name": "wordpress-gutenberg-designer",
   "title": "WordPress Gutenberg Designer",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Convert a visual comp into a WordPress-native Gutenberg plan, theme.json, patterns, templates, and preview.",
   "license": "MIT",
   "author": {

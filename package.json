@@ -1,0 +1,11 @@
+{
+  "name": "wordpress-gutenberg-designer",
+  "version": "1.0.0",
+  "description": "Open Design plugin for generating WordPress child themes with valid Gutenberg block markup",
+  "scripts": {
+    "validate": "node scripts/validate-output.mjs"
+  },
+  "dependencies": {
+    "@wordpress/block-serialization-default-parser": "^5.48.0"
+  }
+}

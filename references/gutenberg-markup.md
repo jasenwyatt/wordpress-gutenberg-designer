@@ -247,3 +247,156 @@ Use scoped CSS for features not cleanly represented by `theme.json`, including:
 - highly specific component relationships.
 
 Do not duplicate global token definitions in CSS.
+
+### 11. `style.typography.color` does not exist (CRITICAL)
+
+Bad — causes block recovery on every block using it:
+```html
+<!-- wp:paragraph {"style":{"typography":{"color":"#0f172a"}}} -->
+```
+
+Good:
+```html
+<!-- wp:paragraph {"style":{"color":{"text":"#0f172a"},"typography":{"fontSize":"1rem","fontWeight":"600"}}} -->
+<p class="has-text-color" style="color:#0f172a;font-size:1rem;font-weight:600">text</p>
+<!-- /wp:paragraph -->
+```
+
+This path does not exist in Gutenberg. Always use `style.color.text` for custom hex text color.
+
+### 12. `wp-block-paragraph` class must NOT be on `<p>` (CRITICAL)
+
+Bad — paragraph's `save()` never adds this class:
+```html
+<!-- wp:paragraph -->
+<p class="wp-block-paragraph">...</p>
+<!-- /wp:paragraph -->
+```
+
+Good:
+```html
+<!-- wp:paragraph -->
+<p>Hello world</p>
+<!-- /wp:paragraph -->
+```
+
+The `<p>` tag only gets alignment classes, color classes, inline styles, and `has-drop-cap`. Adding `wp-block-paragraph` causes mass block recovery.
+
+### 13. Button `<a>` class order (CRITICAL)
+
+Build button `<a>` classes in this exact order:
+
+| Condition | Class |
+|-----------|-------|
+| Always | `wp-block-button__link` |
+| `textColor` named slug | `has-{slug}-color has-text-color` |
+| `style.color.text` hex | `has-text-color` |
+| `backgroundColor` named slug | `has-{slug}-background-color has-background` |
+| `style.color.background` hex | `has-background` |
+| `borderColor` or `style.border.color` | `has-border-color` |
+| `fontSize` named preset | `has-{slug}-font-size` |
+| `fontSize` preset or `style.typography.fontSize` | `has-custom-font-size` |
+| `style.css` set | `has-custom-css` |
+| Always (last) | `wp-element-button` |
+
+### 14. Button `<a>` CSS property order (CRITICAL)
+
+`save()` enforces this exact inline `style` property order:
+
+```
+border-color → border-width → border-radius → color → background-color → padding-top → padding-right → padding-bottom → padding-left → font-size → font-weight
+```
+
+Wrong order triggers `save()` mismatch.
+
+### 15. Separator `has-alpha-channel-opacity` (HIGH)
+
+Bad:
+```html
+<!-- wp:separator -->
+<hr class="wp-block-separator has-text-color has-background" style="background-color:#aabbcc;color:#aabbcc"/>
+<!-- /wp:separator -->
+```
+
+Good:
+```html
+<!-- wp:separator -->
+<hr class="wp-block-separator has-text-color has-alpha-channel-opacity has-background" style="background-color:#aabbcc;color:#aabbcc"/>
+<!-- /wp:separator -->
+```
+
+### 16. File block `aria-describedby` (HIGH)
+
+Bad:
+```html
+<!-- wp:file {"id":42} -->
+<div class="wp-block-file"><a href="file.pdf">Document</a><a class="wp-block-file__button wp-element-button" href="file.pdf">Download</a></div>
+<!-- /wp:file -->
+```
+
+Good:
+```html
+<!-- wp:file {"id":42} -->
+<div class="wp-block-file"><a id="wp-block-file--media-42" href="file.pdf">Document</a><a class="wp-block-file__button wp-element-button" href="file.pdf" aria-describedby="wp-block-file--media-42">Download</a></div>
+<!-- /wp:file -->
+```
+
+### 17. Block-level custom CSS marker class (MEDIUM — WordPress 7.0+)
+
+When `style.css` is set on any block, `has-custom-css` must appear on the saved HTML wrapper:
+
+```html
+<!-- wp:group {"style":{"css":"padding-top:2rem"}} -->
+<div class="wp-block-group has-custom-css" style="padding-top:2rem">
+  <!-- wp:paragraph -->
+  <p>Content</p>
+  <!-- /wp:paragraph -->
+</div>
+<!-- /wp:group -->
+```
+
+## Per-block class rules
+
+### `core/paragraph`
+
+- **Never** add `wp-block-paragraph` class to `<p>`.
+- `has-drop-cap` when `dropCap: true`.
+- Named `textColor` → `has-{slug}-color has-text-color`.
+- `style.typography.textAlign` → `has-text-align-{value}` class.
+
+### `core/heading`
+
+- Class is `wp-block-heading` (not `wp-block-h2`).
+- `level` determines tag: `"level":3` → `<h3>`.
+- `style.color.text` → `has-text-color` + inline `color:#hex`.
+
+### `core/image`
+
+- `<figure>` is required wrapper with `wp-block-image`.
+- `<img>` must have `wp-image-{id}` when `id` is set.
+- `sizeSlug` adds `size-{slug}` to `<figure>`.
+- `<figcaption>` class must be `wp-element-caption`.
+
+### `core/cover`
+
+- Element order inside wrapper: `<img>` (or `<video>`) FIRST, then `<span>` overlay, then `<div class="wp-block-cover__inner-container">`. Wrong order causes recovery.
+- `dimRatio` maps to `has-background-dim-{value}` + `has-background-dim`.
+- When `isDark` is false, add `is-light` class to outer div.
+
+### `core/button`
+
+- Must be inside `wp:buttons`.
+- Inner HTML is the link text, wrapped in `<a class="wp-block-button__link wp-element-button">`.
+- `has-custom-font-size` required when `fontSize` or `style.typography.fontSize` is set.
+- `has-border-color` required when `borderColor` or `style.border.color` is set.
+- CSS property order: border → color → spacing → typography.
+
+### `core/list`
+
+- `ordered: true` → `<ol>`, default → `<ul>`.
+- `wp-block-list` class on wrapper (but not required in some versions — check target).
+
+### `core/separator`
+
+- `has-alpha-channel-opacity` is required.
+- `has-text-color` + `has-background` when color is set.

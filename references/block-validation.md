@@ -26,6 +26,14 @@ The user can "Attempt recovery," but recovery often strips styling or resets con
 11. **Inline `style` attributes on `<a>` tags inside blocks** — these are not part of the block's saved attributes. Gutenberg's `save()` function doesn't know about them, and they may be stripped on re-save.
 12. **Unregistered block style classes (`is-style-*`)** — if `register_block_style()` was not called in `functions.php`, the class has no effect and may trigger a validation warning on some blocks.
 13. **Raw hex in `style.border.color`** — use `borderColor` top-level attribute with a preset slug instead.
+14. **`style.typography.color`** — this path does **not** exist in Gutenberg. Using it causes every block with it to need recovery. Use `style.color.text` instead.
+15. **`wp-block-paragraph` class on `<p>`** — paragraph's `save()` function **never** adds this class. Adding it causes mass block recovery on every paragraph.
+16. **Button `<a>` missing `has-custom-font-size`** — required when `fontSize` or `style.typography.fontSize` is set on a button.
+17. **Button `<a>` missing `has-border-color`** — required when `borderColor` or `style.border.color` is set on a button.
+18. **Button `<a>` missing `has-alpha-channel-opacity`** — required on separator blocks.
+19. **File block download button missing `aria-describedby`** — required for accessibility and save() consistency.
+20. **Button CSS property order** — `save()` enforces exact order: border-color → border-width → border-radius → color → background-color → padding-* → font-size → font-weight. Wrong order causes mismatch.
+21. **`style.css` without `has-custom-css`** — WordPress 7.0+ block-level custom CSS requires the marker class.
 
 ## Version compatibility matrix
 
@@ -334,6 +342,11 @@ Before calling a pattern complete, verify every item on a real WordPress site:
 - [ ] **No deprecated `minHeight`/`minHeightUnit` top-level attributes — use `style.dimensions.minHeight`.**
 - [ ] **No inline `style` on `<a>` tags inside blocks — use block-level attributes or CSS classes.**
 - [ ] **All `is-style-*` classes have matching `register_block_style()` calls in `functions.php`.**
+- [ ] **No `style.typography.color` anywhere — use `style.color.text` instead.**
+- [ ] **No `wp-block-paragraph` class on `<p>` tags.**
+- [ ] **Buttons have `has-custom-font-size` when `fontSize` set, `has-border-color` when border color set, `wp-element-button` always.**
+- [ ] **Separators have `has-alpha-channel-opacity`.**
+- [ ] **File blocks have `aria-describedby` on download buttons.**
 
 ## Escalation: when to add a `parse_blocks` test
 

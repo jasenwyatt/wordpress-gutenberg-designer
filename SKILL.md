@@ -73,9 +73,15 @@ Use `assets/theme-json.template.json` as a safe starting structure, not as a sub
 14. **Do not use deprecated `minHeight`/`minHeightUnit` top-level attributes.** Use `style.dimensions.minHeight` instead (e.g., `"style":{"dimensions":{"minHeight":"640px"}}`).
 15. **Do not add inline `style` attributes on `<a>` tags inside block markup.** Inline styles on links are not saved as block attributes and may be stripped on re-save.
 16. **Register all `is-style-*` classes in `functions.php` via `register_block_style()`**, or the class has no effect and may trigger a validation warning.
-17. Static preview HTML is a visual projection only. It is never the canonical WordPress artifact.
-18. Preserve heading order, landmarks, readable contrast, keyboard access, meaningful image alt guidance, and reduced-motion behavior.
-19. Never claim pixel-perfect fidelity when the comp omits responsive states, font files, asset crops, or content behavior.
+17. **Never use `style.typography.color` — it does not exist in Gutenberg.** Use `style.color.text` for custom hex text color. Using `style.typography.color` causes block recovery on every block.
+18. **Never add `wp-block-paragraph` class to `<p>`.** Paragraph's `save()` never adds this class. Adding it causes mass block recovery.
+19. **Button `<a>` must include `has-custom-font-size` when `fontSize` is set**, `has-border-color` when border color is set, and `wp-element-button` always. CSS properties must follow: border → color → spacing → typography.
+20. **Separator blocks must include `has-alpha-channel-opacity`.** Missing this class causes block recovery.
+21. **File block download buttons must have `aria-describedby`** referencing the text link's ID.
+22. **When `style.css` is set (7.0+), include `has-custom-css`** on the block wrapper.
+23. Static preview HTML is a visual projection only. It is never the canonical WordPress artifact.
+24. Preserve heading order, landmarks, readable contrast, keyboard access, meaningful image alt guidance, and reduced-motion behavior.
+25. Never claim pixel-perfect fidelity when the comp omits responsive states, font files, asset crops, or content behavior.
 
 ## Workflow
 
@@ -208,6 +214,13 @@ Then perform this manual WordPress checklist on a real site with the generated t
 - [ ] **No deprecated `minHeight`/`minHeightUnit` — use `style.dimensions.minHeight`.**
 - [ ] **No inline `style` on `<a>` tags inside blocks.**
 - [ ] **All `is-style-*` classes have matching `register_block_style()` in `functions.php`.**
+- [ ] **No `style.typography.color` — use `style.color.text` instead.**
+- [ ] **No `wp-block-paragraph` class on `<p>` — paragraph `save()` never adds it.**
+- [ ] **Buttons have `has-custom-font-size` when `fontSize` is set, `has-border-color` when border color is set, `wp-element-button` always.**
+- [ ] **Button `<a>` CSS properties follow: border → color → spacing → typography.**
+- [ ] **Separators have `has-alpha-channel-opacity`.**
+- [ ] **File block download buttons have `aria-describedby`.**
+- [ ] **Blocks with `style.css` have `has-custom-css` (7.0+).**
 
 **Visual checks (editor + frontend):**
 - [ ] All preset colors, font sizes, and spacing values render correctly in both editor and frontend.

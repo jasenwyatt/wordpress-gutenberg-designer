@@ -69,9 +69,50 @@ The included dependency-free validator checks the basic handoff shape:
 node scripts/validate-output.mjs /path/to/generated-output
 ```
 
-It checks required files, JSON parsing, `theme.json` version, pattern headers, Gutenberg delimiter balance, and avoidable raw color values in block markup.
+It checks required files, JSON parsing, `theme.json` version, pattern headers, Gutenberg delimiter balance, avoidable raw color values in block markup, preset cross-references, version-gated attributes, and common `save()` mismatch patterns (duplicate preset class + inline style).
 
-This is not a substitute for loading the result into WordPress. The next validation tier should use `wp-env`, `parse_blocks()`, editor console checks, and frontend screenshot comparison.
+**This is structural validation only.** It catches many errors but cannot verify that Gutenberg's `save()` function will accept the markup. The next tier must load the result into WordPress.
+
+### Next validation tier: WordPress environment
+
+For production handoffs, verify patterns in a real WordPress instance:
+
+1. **Using `wp-env` (recommended for CI):**
+   ```bash
+   cd /path/to/generated-output/wordpress
+   npx wp-env start
+   npx wp-env run tests-cli wp eval 'parse_blocks(file_get_contents("patterns/service-hero.php"));'
+   ```
+
+2. **Using a staging site:**
+   - Activate the generated theme.
+   - Insert each pattern via the block inserter.
+   - Check for "unexpected or invalid content" warnings.
+   - Verify frontend rendering matches the comp.
+
+3. **Using `parse_blocks()` programmatically:**
+   ```php
+   $markup = file_get_contents( 'patterns/service-hero.php' );
+   // Strip PHP header
+   $blocks = parse_blocks( preg_replace('/<\?php[^]*?\?>/', '', $markup) );
+   foreach ( $blocks as $block ) {
+     if ( is_array( $block ) && ! empty( $block['blockName'] ) ) {
+       $block_type = WP_Block_Type_Registry::get_instance()->get_registered( $block['blockName'] );
+       if ( ! $block_type ) {
+         // Unregistered block — will break in editor
+       }
+     }
+   }
+   ```
+
+4. **Editor console checks:**
+   - Open browser DevTools on the block editor.
+   - Watch for `blocks` validation errors in the console.
+   - Look for `wp.blocks.*` warnings about unsupported attributes.
+
+5. **Frontend screenshot comparison:**
+   - Use Playwright or similar to capture the rendered frontend.
+   - Compare against the source comp with visual diffing.
 
 ## Plugin structure
 

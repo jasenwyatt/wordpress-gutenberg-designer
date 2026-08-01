@@ -50,6 +50,7 @@ Read these files before generation:
 3. `references/theme-json-mapping.md`
 4. `references/gutenberg-markup.md`
 5. `references/output-contract.md`
+6. `references/block-validation.md`
 
 Use `assets/wordpress-design.schema.json` as the shape for `wordpress-design.json`.
 Use `assets/theme-json.template.json` as a safe starting structure, not as a substitute for inspecting an existing `theme.json`.
@@ -65,9 +66,11 @@ Use `assets/theme-json.template.json` as a safe starting structure, not as a sub
 7. Use `theme.json` presets for supported color, typography, spacing, shadow, and layout values.
 8. Do not invent core block names or attributes.
 9. Gutenberg block comments and their saved HTML must be structurally valid.
-10. Static preview HTML is a visual projection only. It is never the canonical WordPress artifact.
-11. Preserve heading order, landmarks, readable contrast, keyboard access, meaningful image alt guidance, and reduced-motion behavior.
-12. Never claim pixel-perfect fidelity when the comp omits responsive states, font files, asset crops, or content behavior.
+10. **Do not generate attributes introduced in a WordPress version later than `minimumWordPressVersion`.** If the comp requires a newer feature, document it as a custom-block candidate or scoped-CSS fallback.
+11. **Do not duplicate a preset class with an inline `style` for the same property** (e.g., both `has-display-font-size` class and `style="font-size:..."`). This triggers Gutenberg's `save()` validation mismatch.
+12. Static preview HTML is a visual projection only. It is never the canonical WordPress artifact.
+13. Preserve heading order, landmarks, readable contrast, keyboard access, meaningful image alt guidance, and reduced-motion behavior.
+14. Never claim pixel-perfect fidelity when the comp omits responsive states, font files, asset crops, or content behavior.
 
 ## Workflow
 
@@ -176,26 +179,45 @@ The preview must:
 
 ### 8. Critique and verify
 
-Check:
+Before calling the output complete, run the structural validator and perform a manual WordPress verification.
 
-- visual hierarchy and source fidelity,
-- core-block-first compliance,
-- valid JSON,
-- `theme.json` version and schema declaration,
-- balanced Gutenberg block delimiters,
-- valid pattern headers,
-- preset usage instead of avoidable raw values,
-- responsive assumptions,
-- accessibility concerns,
-- unsupported or ambiguous design features.
-
-When subprocess execution is available, run:
+Run the validator when available:
 
 ```bash
 node scripts/validate-output.mjs <generated-output-directory>
 ```
 
-Fix errors before final delivery. Warnings may remain only when explained in `report.md`.
+Then perform this manual WordPress checklist on a real site with the generated theme active:
+
+**Structural checks (editor):**
+- [ ] Every pattern loads in the block editor without "unexpected or invalid content" warnings.
+- [ ] Block delimiter balance is correct (every `<!-- wp:... -->` has a matching `<!-- /wp:... -->`).
+- [ ] No container block uses self-closing syntax (`/-->`).
+- [ ] No `core/` namespace prefix appears inside serialized block comments.
+- [ ] No version-incompatible attributes are present for the stated `minimumWordPressVersion`.
+- [ ] No raw hex colors exist in block markup (all colors reference `theme.json` presets).
+- [ ] All referenced presets (`var:preset|color|...`, `var:preset|spacing|...`, etc.) exist in `theme.json`.
+- [ ] No inline `style` duplicates a preset class for the same property (e.g., `has-display-font-size` + `style="font-size:..."`).
+
+**Visual checks (editor + frontend):**
+- [ ] All preset colors, font sizes, and spacing values render correctly in both editor and frontend.
+- [ ] Custom classes appear in the DOM and match intended scoped CSS.
+- [ ] Responsive behavior matches the comp (stack order, hiding, breakpoints).
+- [ ] Images have correct aspect ratios or scale behavior.
+- [ ] Buttons are editable and links are clickable.
+- [ ] Query loops populate with the correct post type and ordering when applicable.
+- [ ] Heading hierarchy makes sense for accessibility (`h1` → `h2` → `h3`).
+- [ ] The pattern can be inserted from the pattern inserter and works in multiple contexts (page, post, template).
+
+**If subprocess execution is available, also run:**
+
+```bash
+node scripts/validate-output.mjs <generated-output-directory>
+```
+
+Fix all errors before final delivery. Warnings may remain only when explained in `report.md` with a clear remediation plan.
+
+For high-stakes handoffs, add a `parse_blocks()` test in the target WordPress environment (see `references/block-validation.md` §Escalation).
 
 ## Output contract
 

@@ -8,8 +8,8 @@
  */
 ?>
 <!-- wp:group {"align":"full","backgroundColor":"canvas","className":"is-style-service-hero","style":{"spacing":{"padding":{"top":"var:preset|spacing|80","bottom":"var:preset|spacing|80"}}},"layout":{"type":"constrained"}} -->
-<div class="wp-block-group alignfull is-style-service-hero has-canvas-background-color has-background" style="padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)"><!-- wp:columns {"verticalAlignment":"center","align":"wide","style":{"spacing":{"blockGap":{"left":"var:preset|spacing|80"}}}} -->
-<div class="wp-block-columns alignwide are-vertically-aligned-center"><!-- wp:column {"verticalAlignment":"center"} -->
+<div class="wp-block-group alignfull is-style-service-hero has-canvas-background-color has-background" style="padding-top:var(--wp--preset--spacing--80);padding-bottom:var(--wp--preset--spacing--80)"><!-- wp:columns {"verticalAlignment":"center","align":"wide","style":{"spacing":{"blockGap":"var:preset|spacing|80"}}} -->
+<div class="wp-block-columns alignwide are-vertically-aligned-center" style="gap:var(--wp--preset--spacing--80)"><!-- wp:column {"verticalAlignment":"center"} -->
 <div class="wp-block-column is-vertically-aligned-center"><!-- wp:paragraph {"textColor":"accent","style":{"typography":{"fontStyle":"normal","fontWeight":"700","textTransform":"uppercase","letterSpacing":"0.08em"}}} -->
 <p class="has-accent-color has-text-color" style="font-style:normal;font-weight:700;letter-spacing:0.08em;text-transform:uppercase">Specialized care</p>
 <!-- /wp:paragraph -->

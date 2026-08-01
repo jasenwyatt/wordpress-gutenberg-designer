@@ -4,7 +4,7 @@ description: Use this plugin when the user provides a comp, screenshot, mockup, 
 license: MIT
 metadata:
   author: Jasen Wyatt
-  version: 0.3.0
+  version: 0.3.1
 od:
   scenario: import
   mode: prototype
@@ -188,51 +188,39 @@ The preview must:
 - include desktop and responsive behavior,
 - avoid becoming an unrelated static implementation.
 
-### 8. Critique and verify (MACHINE + LLM HYBRID)
+### 8. Critique and verify (LLM SELF-CHECK)
 
-This is the quality gate. The critique must combine **machine validation** (structural checks) with **LLM review** (semantic checks). Neither alone is sufficient.
+This is the quality gate. The critique is performed by the LLM itself against a strict rule checklist. No external tools are available during this stage.
 
-#### Step — 1: Run the structural validator (CRITICAL)
+#### Step — 1: Structural self-check
 
-Before any scoring, run the validator on the generated output directory:
+Read every generated PHP/HTML file that contains Gutenberg block comments and verify the following structural rules. Record every violation.
 
-```bash
-node scripts/validate-output.mjs <generated-output-directory>
-```
+| # | Rule | Severity |
+|---|------|----------|
+| 1 | No `style.typography.color` — does not exist in Gutenberg | 🔴 Critical |
+| 2 | No `wp-block-paragraph` class on `<p>` — paragraph `save()` never adds it | 🔴 Critical |
+| 3 | `fontFamily` and `fontSize` must be top-level attributes, NOT nested in `style.typography` | 🔴 Critical |
+| 4 | No deprecated `minHeight`/`minHeightUnit` top-level — use `style.dimensions.minHeight` | 🔴 Critical |
+| 5 | No raw hex colors in `style.color.text` or `style.color.background` — use `textColor`/`backgroundColor` presets | 🔴 Critical |
+| 6 | No inline `style` attributes on `<a>` tags inside blocks | 🔴 Critical |
+| 7 | No container block uses self-closing syntax (`/-->`) | 🔴 Critical |
+| 8 | No unmatched block delimiters | 🔴 Critical |
+| 9 | Button `<a>` has `has-custom-font-size` when `fontSize` is set, `has-border-color` when border color is set, `wp-element-button` always | 🟡 High |
+| 10 | Separator blocks include `has-alpha-channel-opacity` | 🟡 High |
+| 11 | File block download buttons have `aria-describedby` | 🟡 High |
+| 12 | Blocks with `style.css` have `has-custom-css` (7.0+) | 🟡 High |
+| 13 | No version-incompatible attributes for the stated `minimumWordPressVersion` | 🟡 High |
+| 14 | All `is-style-*` classes have matching `register_block_style()` in `functions.php` | 🟡 High |
 
-Where `<generated-output-directory>` is the folder containing `wordpress/`, `report.md`, etc. If the validator is not available at that path, search for `validate-output.mjs` in the plugin directory or skip to Step 2.
+**Tally:**
+- Critical errors (🔴): ___
+- High errors (🟡): ___
+- Warnings (info only): ___
 
-Capture the output. Extract:
-- `errorCount`: number of ERROR lines
-- `warningCount`: number of WARN lines
-- Specific error messages (copy them verbatim)
+#### Step — 2: Semantic self-check
 
-#### Step — 2: Machine-validation score
-
-Calculate a base score from the validator output:
-
-| Error count | Base score | Meaning |
-|-------------|-----------|---------|
-| 0           | 4         | Structurally clean |
-| 1–3        | 3         | Minor structural issues |
-| 4–6        | 2         | Moderate issues; some patterns may break |
-| 7+          | 1         | Severe; many blocks will fail in editor |
-| Validator not available | 3 | Proceed with LLM-only critique |
-
-**Wipe 1 point from the base score** if ANY of these critical errors appear:
-- `style.typography.color` does not exist
-- `wp-block-paragraph` on `<p>`
-- Missing `has-custom-font-size` on button with `fontSize`
-- Missing `has-border-color` on button with border color
-- Missing `has-alpha-channel-opacity` on separator
-- Raw hex in `style.color.text` without `textColor` preset
-- `fontFamily` nested in `style.typography`
-- Container block using self-closing syntax (`/-->`)
-- Unmatched block delimiters
-
-#### Step — 3: LLM semantic critique
-
-Review the generated markup for issues the validator cannot catch:
+Review the generated markup for issues the checklist above cannot catch:
 
 **Hierarchy and accessibility:**
 - Heading levels descend logically (no `h1` → `h3` skip)
@@ -251,86 +239,36 @@ Review the generated markup for issues the validator cannot catch:
 - Font sizes correspond to the typography scale
 - Spacing values match the comp rhythm
 
-#### Step — 4: Combine and assign final score
+#### Step — 3: Score and gate
+
+Calculate score based on the tallied violations:
 
 ```
-finalScore = machineBaseScore
-if (LLM finds semantic issues): finalScore -= 1
-if (LLM finds major accessibility problems): finalScore -= 1
-finalScore = clamp(finalScore, 1, 5)
+startScore = 5
+if (criticalErrors > 0): startScore -= 2
+if (criticalErrors > 3): startScore -= 1  (additional penalty)
+if (highErrors > 0): startScore -= 1
+if (highErrors > 4): startScore -= 1  (additional penalty)
+if (semanticIssuesFound): startScore -= 1
+finalScore = clamp(startScore, 1, 5)
 ```
 
-**Score meanings:**
-- **5**: Flawless. Zero errors, zero warnings, semantic review clean. Rare.
-- **4**: Good. Zero errors, minor warnings only. Semantic review clean. Acceptable for delivery.
-- **3**: Fair. 1–3 structural errors or minor semantic issues. Fix before delivery if possible.
-- **2**: Poor. 4+ structural errors or major semantic issues. Requires another generate loop.
-- **1**: Broken. Severe structural failures or critical semantic issues. Must regenerate.
+| Score | Meaning | Action |
+|-------|---------|--------|
+| 5 | Flawless. Zero structural or semantic issues. Rare. | Deliver |
+| 4 | Good. Zero critical, minor high/semantic only. | Deliver |
+| 3 | Fair. 1-2 critical or several high. | Fix critical errors, then deliver |
+| 2 | Poor. 3+ critical or major semantic issues. | Regenerate failing files |
+| 1 | Broken. Severe structural failures. | Full regeneration required |
 
-#### Step — 5: Write critique report
+**Gate rules:**
+- If **finalScore >= 4**: Proceed to delivery.
+- If **finalScore == 3**: Fix all critical errors. Re-check. If still 3, deliver with `KNOWN_ISSUES.md`.
+- If **finalScore <= 2**: Do NOT deliver. Return to generate stage with the error list as context. Fix only failing files, re-check, score again.
 
-Write a `critique.md` file in the output directory with this structure:
+**Maximum iterations:** 3. If score < 4 after 3 iterations, deliver what exists with a prominent `KNOWN_ISSUES.md` file.
 
-```markdown
-# Critique Report
-
-Date: <YYYY-MM-DD HH:MM>
-Iteration: <N>
-
-## Machine Validation
-```
-<paste full validator output here>
-```
-
-Validator error count: <N>
-Validator warning count: <N>
-Machine base score: <1-4>
-
-## Semantic Review
-
-| Check | Status | Notes |
-|-------|--------|-------|
-| Heading hierarchy | ✓/✗ | |
-| Landmark usage | ✓/✗ | |
-| Contrast | ✓/✗ | |
-| Pattern reusability | ✓/✗ | |
-| Query loop correctness | ✓/✗ | |
-| Token fidelity | ✓/✗ | |
-
-## Issues Found
-
-1. <Issue description with file path>
-2. <Issue description with file path>
-...
-
-## Recommended Fixes
-
-1. <Specific action>
-2. <Specific action>
-...
-
-## Final Score
-
-**<1-5>**
-
-- Machine base: <score>
-- Semantic deductions: <N>
-- Final: <score>
-```
-
-#### Step — 6: Gate on score
-
-- If **finalScore >= 4**: Proceed to final delivery. Update `report.md` with "Validation passed on iteration N."
-- If **finalScore == 3**: Attempt to fix the specific errors listed in `critique.md`. Run validator again. If still 3 after one fix attempt, proceed with warnings documented.
-- If **finalScore <= 2**: Do NOT deliver. Return to the generate stage with the `critique.md` as context. The agent should:
-  1. Read the specific errors
-  2. Fix only the failing files (do not regenerate everything)
-  3. Re-run the validator
-  4. Score again
-
-**Maximum iterations:** 3. If score < 4 after 3 iterations, deliver what exists with a prominent `KNOWN_ISSUES.md` file listing all remaining errors.
-
-#### Step — 7: Manual WordPress checklist (if applicable)
+#### Step — 4: Manual WordPress checklist (if applicable)
 
 If you have access to a running WordPress instance with the generated theme active, perform these additional checks:
 
@@ -366,15 +304,7 @@ If you have access to a running WordPress instance with the generated theme acti
 - [ ] Heading hierarchy makes sense for accessibility (`h1` → `h2` → `h3`).
 - [ ] The pattern can be inserted from the pattern inserter and works in multiple contexts (page, post, template).
 
-**If subprocess execution is available, also run:**
-
-```bash
-node scripts/validate-output.mjs <generated-output-directory>
-```
-
 Fix all errors before final delivery. Warnings may remain only when explained in `report.md` or `KNOWN_ISSUES.md` with a clear remediation plan.
-
-For high-stakes handoffs, add a `parse_blocks()` test in the target WordPress environment (see `references/block-validation.md` §Escalation).
 
 ## Output contract
 

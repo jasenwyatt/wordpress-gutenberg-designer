@@ -1,93 +1,75 @@
-# Critique Report Template
+# Self-Check Template
 
-Use this template when writing `critique.md` during the hybrid machine+LLM critique phase.
+Use this template when performing the LLM self-check critique in SKILL.md §Step 8.
 
-## When to use
+Since no external tools are available, the agent must read its own generated files and score them manually.
 
-- After generating WordPress patterns/templates
-- Before calling the output complete
-- Whenever the pipeline enters the `critique` stage
+## Structural Checklist
 
-## Template
+### Critical Rules (🔴 — each violation = -2 points)
 
-```markdown
-# Critique Report
+- [ ] No `style.typography.color` anywhere in block markup
+- [ ] No `wp-block-paragraph` class on `<p>` tags
+- [ ] `fontFamily` and `fontSize` are top-level attributes, not inside `style.typography`
+- [ ] No deprecated `minHeight`/`minHeightUnit` — use `style.dimensions.minHeight`
+- [ ] No raw hex in `style.color.text` or `style.color.background`
+- [ ] No inline `style` on `<a>` tags inside blocks
+- [ ] No container block uses self-closing syntax (`/-->`)
+- [ ] No unmatched block delimiters
 
-Date: <YYYY-MM-DD HH:MM>
-Iteration: <N>
+### High Rules (🟡 — each violation = -1 point)
 
-## Machine Validation
+- [ ] Button `<a>` has `has-custom-font-size` when `fontSize` is set
+- [ ] Button `<a>` has `has-border-color` when border color is set
+- [ ] Button `<a>` has `wp-element-button` always
+- [ ] Separator blocks include `has-alpha-channel-opacity`
+- [ ] File block download buttons have `aria-describedby`
+- [ ] Blocks with `style.css` have `has-custom-css` (7.0+)
+- [ ] No version-incompatible attributes for `minimumWordPressVersion`
+- [ ] All `is-style-*` classes have `register_block_style()` in `functions.php`
+
+## Semantic Checklist
+
+- [ ] Heading levels descend logically
+- [ ] Landmark regions used correctly
+- [ ] Contrast ratios plausible
+- [ ] Alt text present for images or noted decorative
+- [ ] Patterns are reusable
+- [ ] Query loops target correct post type
+- [ ] Template parts wired into templates
+- [ ] Preview HTML matches comp layout
+- [ ] Colors match extracted palette
+- [ ] Font sizes match typography scale
+- [ ] Spacing values match comp rhythm
+
+## Scoring
+
+Tally critical errors: ___
+Tally high errors: ___
+Semantic issues found? Y/N
 
 ```
-<paste full validator output here>
+startScore = 5
+if (criticalErrors > 0): startScore -= 2
+if (criticalErrors > 3): startScore -= 1
+if (highErrors > 0): startScore -= 1
+if (highErrors > 4): startScore -= 1
+if (semanticIssuesFound): startScore -= 1
+finalScore = clamp(startScore, 1, 5)
 ```
 
-Validator error count: <N>
-Validator warning count: <N>
-Machine base score: <1-4>
+| Score | Action |
+|-------|--------|
+| 5 | Deliver |
+| 4 | Deliver |
+| 3 | Fix critical errors, re-check, deliver |
+| 2 | Regenerate failing files |
+| 1 | Full regeneration required |
 
-## Semantic Review
+## Iteration Log
 
-| Check | Status | Notes |
-|-------|--------|-------|
-| Heading hierarchy | ✓/✗ | |
-| Landmark usage | ✓/✗ | |
-| Contrast | ✓/✗ | |
-| Pattern reusability | ✓/✗ | |
-| Query loop correctness | ✓/✗ | |
-| Token fidelity | ✓/✗ | |
-
-## Issues Found
-
-1. <Issue description with file path>
-2. <Issue description with file path>
-...
-
-## Recommended Fixes
-
-1. <Specific action>
-2. <Specific action>
-...
-
-## Final Score
-
-**<1-5>**
-
-- Machine base: <score>
-- Semantic deductions: <N>
-- Final: <score>
-```
-
-## Scoring reference
-
-| Final score | Meaning | Action |
-|-------------|---------|--------|
-| 5 | Flawless | Deliver immediately |
-| 4 | Good | Deliver (acceptable) |
-| 3 | Fair | Attempt one fix cycle |
-| 2 | Poor | Must fix before delivery |
-| 1 | Broken | Must regenerate |
-
-## Machine base score table
-
-| Error count | Base score |
-|-------------|-----------|
-| 0 | 4 |
-| 1–3 | 3 |
-| 4–6 | 2 |
-| 7+ | 1 |
-| Validator unavailable | 3 |
-
-## Critical errors (wipe 1 point)
-
-Any of these drops the base score by 1:
-
-- `style.typography.color` does not exist
-- `wp-block-paragraph` on `<p>`
-- Missing `has-custom-font-size` on button with `fontSize`
-- Missing `has-border-color` on button with border color
-- Missing `has-alpha-channel-opacity` on separator
-- Raw hex in `style.color.text` without `textColor` preset
-- `fontFamily` nested in `style.typography`
-- Container block using self-closing syntax (`/-->`)
-- Unmatched block delimiters
+| Iteration | Critical | High | Semantic | Score | Action |
+|-----------|----------|------|----------|-------|--------|
+| 1 | | | | | |
+| 2 | | | | | |
+| 3 | | | | | |

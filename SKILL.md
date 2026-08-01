@@ -4,7 +4,7 @@ description: Use this plugin when the user provides a comp, screenshot, mockup, 
 license: MIT
 metadata:
   author: Jasen Wyatt
-  version: 0.1.0
+  version: 0.2.0
 od:
   scenario: import
   mode: prototype

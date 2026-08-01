@@ -1,0 +1,29 @@
+{
+  "skill_name": "wordpress-gutenberg-designer",
+  "evals": [
+    {
+      "id": "desktop-mobile-page-pattern",
+      "prompt": "Use the attached desktop and mobile healthcare landing-page comps. Generate a full-page WordPress pattern using core blocks preferred. The service cards should be a Query Loop for the service CPT.",
+      "expected_output": "A comp-driven Gutenberg handoff with visual analysis, a reviewable WordPress plan, theme.json v3, valid pattern markup, Query Loop mapping, responsive assumptions, preview, and report.",
+      "assertions": [
+        "The output includes wordpress-design.json, wordpress/theme.json, preview/index.html, and report.md",
+        "The service-card region is mapped to Query Loop rather than hard-coded cards",
+        "The plan separates visible facts from assumptions",
+        "The output prefers core blocks and patterns over custom blocks",
+        "The theme.json output reuses supplied presets before adding new tokens",
+        "The pattern markup uses Gutenberg block delimiters"
+      ]
+    },
+    {
+      "id": "existing-theme-extension",
+      "prompt": "Use the supplied comp and existing theme.json to create a reusable call-to-action pattern. Do not create duplicate palette or spacing presets.",
+      "expected_output": "A small theme extension that reuses existing design tokens, generates one editable pattern, and reports any unavoidable CSS.",
+      "assertions": [
+        "Existing token slugs are preserved",
+        "No custom block is generated",
+        "Additional CSS is scoped",
+        "The report names tokens reused and tokens proposed"
+      ]
+    }
+  ]
+}

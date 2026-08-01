@@ -1,0 +1,189 @@
+{
+  "$schema": "https://open-design.ai/schemas/plugin.v1.json",
+  "specVersion": "1.0.0",
+  "name": "wordpress-gutenberg-designer",
+  "title": "WordPress Gutenberg Designer",
+  "version": "0.1.0",
+  "description": "Convert a visual comp into a WordPress-native Gutenberg plan, theme.json, patterns, templates, and preview.",
+  "license": "MIT",
+  "author": {
+    "name": "Jasen Wyatt"
+  },
+  "tags": [
+    "import",
+    "wordpress",
+    "gutenberg",
+    "theme-json",
+    "block-patterns",
+    "screenshot-import",
+    "prototype"
+  ],
+  "compat": {
+    "agentSkills": [
+      {
+        "path": "./SKILL.md"
+      }
+    ]
+  },
+  "od": {
+    "kind": "skill",
+    "taskKind": "figma-migration",
+    "mode": "prototype",
+    "scenario": "import",
+    "preview": {
+      "type": "html",
+      "entry": "./preview/index.html",
+      "motion": "scroll"
+    },
+    "useCase": {
+      "query": "Analyze {{designComp}} and create a WordPress Gutenberg implementation package for {{artifactType}} using {{implementationStrategy}}. Use {{mobileComp}} and {{existingThemeJson}} when provided. Target WordPress {{minimumWordPressVersion}} or newer, use namespace {{namespace}}, and follow these notes: {{projectNotes}}.",
+      "exampleOutputs": [
+        {
+          "path": "./examples/service-hero/preview/index.html",
+          "title": "Service hero Gutenberg handoff"
+        }
+      ]
+    },
+    "context": {
+      "skills": [
+        {
+          "path": "./SKILL.md"
+        }
+      ],
+      "assets": [
+        "./assets/wordpress-design.schema.json",
+        "./assets/theme-json.template.json"
+      ],
+      "atoms": [
+        "file-read",
+        "token-map",
+        "todo-write",
+        "file-write",
+        "live-artifact",
+        "critique-theater"
+      ]
+    },
+    "pipeline": {
+      "stages": [
+        {
+          "id": "inspect",
+          "atoms": [
+            "file-read",
+            "token-map"
+          ]
+        },
+        {
+          "id": "plan",
+          "atoms": [
+            "todo-write"
+          ]
+        },
+        {
+          "id": "generate",
+          "atoms": [
+            "file-write",
+            "live-artifact"
+          ]
+        },
+        {
+          "id": "critique",
+          "atoms": [
+            "critique-theater"
+          ],
+          "repeat": true,
+          "until": "critique.score>=4 || iterations>=3"
+        }
+      ]
+    },
+    "genui": {
+      "surfaces": [
+        {
+          "id": "approve-wordpress-plan",
+          "kind": "confirmation",
+          "persist": "run",
+          "trigger": {
+            "stageId": "plan"
+          },
+          "prompt": "Review the proposed Gutenberg block mapping, theme.json token changes, responsive assumptions, and custom-block candidates before WordPress files are generated.",
+          "timeout": 900,
+          "onTimeout": "default",
+          "default": true
+        }
+      ]
+    },
+    "inputs": [
+      {
+        "name": "designComp",
+        "type": "file",
+        "required": true,
+        "label": "Primary design comp"
+      },
+      {
+        "name": "mobileComp",
+        "type": "file",
+        "required": false,
+        "label": "Optional mobile comp"
+      },
+      {
+        "name": "existingThemeJson",
+        "type": "file",
+        "required": false,
+        "label": "Existing theme.json"
+      },
+      {
+        "name": "artifactType",
+        "type": "select",
+        "required": true,
+        "label": "WordPress output",
+        "options": [
+          "Reusable section pattern",
+          "Full page pattern",
+          "Page template",
+          "Block theme starter",
+          "Existing theme extension"
+        ],
+        "default": "Full page pattern"
+      },
+      {
+        "name": "implementationStrategy",
+        "type": "select",
+        "required": true,
+        "label": "Implementation strategy",
+        "options": [
+          "Core blocks only",
+          "Core blocks preferred",
+          "Custom blocks may be proposed"
+        ],
+        "default": "Core blocks preferred"
+      },
+      {
+        "name": "namespace",
+        "type": "string",
+        "required": false,
+        "label": "Pattern namespace",
+        "placeholder": "client-or-theme-slug",
+        "default": "site"
+      },
+      {
+        "name": "minimumWordPressVersion",
+        "type": "string",
+        "required": false,
+        "label": "Minimum WordPress version",
+        "default": "6.6"
+      },
+      {
+        "name": "projectNotes",
+        "type": "text",
+        "required": false,
+        "label": "Implementation notes",
+        "placeholder": "Mention CPTs, Query Loop behavior, editable content, existing blocks, accessibility constraints, or known responsive behavior."
+      }
+    ],
+    "capabilities": [
+      "prompt:inject",
+      "fs:read",
+      "fs:write",
+      "subprocess"
+    ]
+  }
+}

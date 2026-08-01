@@ -1,0 +1,15 @@
+{
+  "skill_name": "wordpress-gutenberg-designer",
+  "should_trigger": [
+    "Turn this homepage comp into Gutenberg blocks and theme.json.",
+    "Recreate this screenshot as a WordPress block pattern.",
+    "Map this design to core blocks and a Query Loop.",
+    "Use our existing theme.json to implement this Figma export in Gutenberg."
+  ],
+  "should_not_trigger": [
+    "Make a generic static HTML landing page.",
+    "Write a WordPress plugin that adds a REST API endpoint.",
+    "Explain how the Gutenberg editor works.",
+    "Create a React dashboard unrelated to WordPress."
+  ]
+}

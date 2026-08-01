@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WordPress Gutenberg Designer Preview</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #637083;
+      --canvas: #f5f1e8;
+      --paper: #ffffff;
+      --accent: #d66a3a;
+      --line: #d8dce3;
+      --success: #1d7a58;
+      --radius: 20px;
+      --shadow: 0 24px 70px rgba(23,32,51,.12);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: var(--ink); background: #eef0f4; }
+    .shell { width: min(1180px, calc(100% - 32px)); margin: 32px auto 72px; }
+    .topbar { display: flex; justify-content: space-between; gap: 24px; align-items: end; margin-bottom: 20px; }
+    .eyebrow { color: var(--accent); text-transform: uppercase; letter-spacing: .1em; font-size: .75rem; font-weight: 800; }
+    h1 { margin: 6px 0 0; font-size: clamp(2rem, 4vw, 4rem); line-height: 1; letter-spacing: -.045em; }
+    .version { background: var(--paper); border: 1px solid var(--line); padding: 8px 12px; border-radius: 999px; font-weight: 700; font-size: .8rem; white-space: nowrap; }
+    .workspace { display: grid; grid-template-columns: .85fr 1.35fr; gap: 20px; align-items: start; }
+    .card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+    .card-header { padding: 18px 20px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .card-header h2 { margin: 0; font-size: 1rem; }
+    .status { color: var(--success); background: #eaf8f2; padding: 5px 9px; border-radius: 999px; font-size: .72rem; font-weight: 800; }
+    .source { min-height: 600px; background: #f7f8fa; padding: 20px; }
+    .mock-comp { min-height: 560px; padding: 44px 36px; border-radius: 14px; color: var(--ink); background: var(--canvas); display: grid; align-content: center; position: relative; overflow: hidden; }
+    .mock-comp::after { content: "SOURCE COMP"; position: absolute; top: 16px; right: 16px; font-size: .65rem; letter-spacing: .12em; font-weight: 900; color: var(--muted); }
+    .mock-grid { display: grid; grid-template-columns: 1.05fr .8fr; gap: 28px; align-items: center; }
+    .mock-grid h3 { font-family: Georgia, serif; font-size: clamp(2.4rem, 5vw, 4.8rem); line-height: .95; letter-spacing: -.05em; margin: 10px 0 18px; }
+    .mock-grid p { color: #475266; line-height: 1.65; }
+    .button { display: inline-block; margin-top: 14px; background: var(--accent); color: white; padding: 12px 18px; border-radius: 999px; font-weight: 800; font-size: .86rem; }
+    .image { aspect-ratio: 4/5; border-radius: 80px 18px 80px 18px; background: linear-gradient(145deg, #eed2bd, #b7c7c9); display: grid; place-items: center; color: rgba(23,32,51,.55); font-weight: 800; }
+    .right { display: grid; gap: 20px; }
+    .plan { padding: 4px 20px 20px; }
+    .section { border-bottom: 1px solid var(--line); padding: 18px 0; }
+    .section:last-child { border-bottom: 0; }
+    .section-title { display: flex; justify-content: space-between; gap: 16px; align-items: baseline; }
+    .section-title strong { font-size: .96rem; }
+    .badge { font-size: .68rem; font-weight: 850; color: #35405a; background: #edf0f6; padding: 5px 8px; border-radius: 7px; }
+    .tree { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 7px; }
+    .node { border: 1px solid var(--line); background: #fafbfc; border-radius: 7px; padding: 6px 8px; font: 700 .72rem ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .assumption { margin-top: 12px; padding: 10px 12px; background: #fff8e9; border-left: 3px solid #d89c2d; font-size: .78rem; color: #5a4722; }
+    .files { padding: 20px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .file { border: 1px solid var(--line); border-radius: 10px; padding: 12px; font: 700 .76rem ui-monospace, SFMono-Regular, Menlo, monospace; background: #fafbfc; }
+    .file span { display: block; margin-top: 4px; font-family: Inter, sans-serif; font-weight: 500; color: var(--muted); }
+    .footer-note { margin-top: 18px; color: var(--muted); line-height: 1.6; font-size: .86rem; }
+    @media (max-width: 860px) {
+      .workspace { grid-template-columns: 1fr; }
+      .topbar { align-items: start; flex-direction: column; }
+      .mock-grid { grid-template-columns: 1fr; }
+      .source { min-height: auto; }
+      .mock-comp { min-height: auto; }
+    }
+    @media (max-width: 520px) {
+      .shell { width: min(100% - 20px, 1180px); margin-top: 18px; }
+      .files { grid-template-columns: 1fr; }
+      .mock-comp { padding: 54px 22px 28px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="topbar">
+      <div>
+        <div class="eyebrow">Comp-driven WordPress handoff</div>
+        <h1>Gutenberg implementation plan</h1>
+      </div>
+      <div class="version">wordpress-gutenberg-designer · 0.1.0</div>
+    </div>
+
+    <div class="workspace">
+      <section class="card" aria-labelledby="source-title">
+        <div class="card-header">
+          <h2 id="source-title">Visual source</h2>
+          <span class="status">Analyzed</span>
+        </div>
+        <div class="source">
+          <div class="mock-comp">
+            <div class="mock-grid">
+              <div>
+                <div class="eyebrow">Specialized care</div>
+                <h3>A clearer path forward.</h3>
+                <p>Visual intent is separated from the WordPress implementation model instead of being fossilized as static HTML.</p>
+                <span class="button">Explore services</span>
+              </div>
+              <div class="image">4:5 media</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="right">
+        <section class="card" aria-labelledby="plan-title">
+          <div class="card-header">
+            <h2 id="plan-title">WordPress plan</h2>
+            <span class="status">Ready for review</span>
+          </div>
+          <div class="plan">
+            <div class="section">
+              <div class="section-title"><strong>Service hero</strong><span class="badge">Pattern</span></div>
+              <div class="tree">
+                <span class="node">core/group</span><span class="node">core/columns</span><span class="node">core/heading</span><span class="node">core/paragraph</span><span class="node">core/buttons</span><span class="node">core/image</span>
+              </div>
+              <div class="assumption">Responsive behavior: stack copy before media. Confidence: high when a mobile comp is supplied.</div>
+            </div>
+            <div class="section">
+              <div class="section-title"><strong>Design tokens</strong><span class="badge">theme.json v3</span></div>
+              <div class="tree"><span class="node">palette</span><span class="node">fontSizes</span><span class="node">spacingSizes</span><span class="node">layout</span></div>
+            </div>
+            <div class="section">
+              <div class="section-title"><strong>Custom engineering</strong><span class="badge">None required</span></div>
+              <p class="footer-note">The image shape uses a scoped block style. A custom React block would add ceremony without adding capability.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="card" aria-labelledby="files-title">
+          <div class="card-header"><h2 id="files-title">Generated package</h2><span class="status">Canonical + preview</span></div>
+          <div class="files">
+            <div class="file">wordpress-design.json<span>Machine-readable source of truth</span></div>
+            <div class="file">wordpress/theme.json<span>Tokens and global styles</span></div>
+            <div class="file">wordpress/patterns/*.php<span>Editable Gutenberg markup</span></div>
+            <div class="file">preview/index.html<span>Visual projection for review</span></div>
+            <div class="file">analysis/wordpress-plan.md<span>Implementation decisions</span></div>
+            <div class="file">report.md<span>Assumptions and validation</span></div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <p class="footer-note">This preview demonstrates the plugin's output shape. The generated WordPress files, not this HTML, are the implementation handoff.</p>
+  </main>
+</body>
+</html>

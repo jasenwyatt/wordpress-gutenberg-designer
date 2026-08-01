@@ -1,0 +1,89 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/theme.json",
+  "version": 3,
+  "settings": {
+    "appearanceTools": true,
+    "layout": {
+      "contentSize": "760px",
+      "wideSize": "1280px"
+    },
+    "color": {
+      "defaultPalette": false,
+      "custom": false,
+      "palette": [
+        {
+          "slug": "ink",
+          "name": "Ink",
+          "color": "#172033"
+        },
+        {
+          "slug": "canvas",
+          "name": "Canvas",
+          "color": "#F5F1E8"
+        },
+        {
+          "slug": "accent",
+          "name": "Accent",
+          "color": "#D66A3A"
+        },
+        {
+          "slug": "white",
+          "name": "White",
+          "color": "#FFFFFF"
+        }
+      ]
+    },
+    "spacing": {
+      "units": [
+        "px",
+        "rem",
+        "%",
+        "vw"
+      ],
+      "spacingSizes": [
+        {
+          "slug": "40",
+          "name": "Medium",
+          "size": "1rem"
+        },
+        {
+          "slug": "60",
+          "name": "Large",
+          "size": "2rem"
+        },
+        {
+          "slug": "80",
+          "name": "Section",
+          "size": "clamp(3rem, 8vw, 7rem)"
+        }
+      ]
+    },
+    "typography": {
+      "fluid": true,
+      "fontSizes": [
+        {
+          "slug": "display",
+          "name": "Display",
+          "size": "clamp(2.75rem, 6vw, 5.5rem)"
+        }
+      ]
+    }
+  },
+  "styles": {
+    "color": {
+      "background": "var:preset|color|white",
+      "text": "var:preset|color|ink"
+    },
+    "elements": {
+      "button": {
+        "color": {
+          "background": "var:preset|color|accent",
+          "text": "var:preset|color|white"
+        },
+        "border": {
+          "radius": "999px"
+        }
+      }
+    }
+  }
+}

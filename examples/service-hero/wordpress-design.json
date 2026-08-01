@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "primaryComp": "service-hero-desktop.png",
+    "mobileComp": "service-hero-mobile.png",
+    "existingThemeJson": null,
+    "viewports": [
+      {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      }
+    ]
+  },
+  "target": {
+    "minimumWordPressVersion": "6.6",
+    "themeJsonVersion": 3,
+    "artifactType": "Reusable section pattern",
+    "implementationStrategy": "Core blocks preferred",
+    "namespace": "site"
+  },
+  "designTokens": {
+    "colors": [
+      {
+        "name": "Ink",
+        "slug": "ink",
+        "value": "#172033",
+        "status": "inferred",
+        "source": "desktop comp"
+      },
+      {
+        "name": "Canvas",
+        "slug": "canvas",
+        "value": "#F5F1E8",
+        "status": "inferred",
+        "source": "desktop comp"
+      },
+      {
+        "name": "Accent",
+        "slug": "accent",
+        "value": "#D66A3A",
+        "status": "inferred",
+        "source": "desktop comp"
+      }
+    ],
+    "typography": [
+      {
+        "name": "Display",
+        "slug": "display",
+        "value": "clamp(2.75rem, 6vw, 5.5rem)",
+        "status": "proposed",
+        "source": "comp scale"
+      }
+    ],
+    "spacing": [
+      {
+        "name": "Section",
+        "slug": "80",
+        "value": "clamp(3rem, 8vw, 7rem)",
+        "status": "proposed",
+        "source": "comp rhythm"
+      }
+    ],
+    "layout": {
+      "contentSize": "760px",
+      "wideSize": "1280px"
+    },
+    "shadows": [],
+    "radii": [
+      {
+        "name": "Card",
+        "slug": "card",
+        "value": "1.25rem",
+        "status": "inferred",
+        "source": "image crop"
+      }
+    ]
+  },
+  "sections": [
+    {
+      "id": "service-hero",
+      "name": "Service hero",
+      "purpose": "Introduce the service and primary action.",
+      "implementation": "pattern",
+      "blockTree": [
+        {
+          "block": "core/group",
+          "role": "full-width hero shell",
+          "attributes": {
+            "align": "full",
+            "layout": {
+              "type": "constrained"
+            }
+          },
+          "children": [
+            {
+              "block": "core/columns",
+              "role": "content and media split",
+              "children": [
+                {
+                  "block": "core/column",
+                  "children": [
+                    {
+                      "block": "core/paragraph",
+                      "role": "eyebrow"
+                    },
+                    {
+                      "block": "core/heading",
+                      "role": "page heading"
+                    },
+                    {
+                      "block": "core/paragraph",
+                      "role": "summary"
+                    },
+                    {
+                      "block": "core/buttons",
+                      "children": [
+                        {
+                          "block": "core/button",
+                          "role": "primary action"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "block": "core/column",
+                  "children": [
+                    {
+                      "block": "core/image",
+                      "role": "hero media"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "contentBehavior": "Manual editable pattern content.",
+      "responsiveBehavior": {
+        "mobile": "Stack content before image; keep left alignment."
+      },
+      "themeJsonChanges": [
+        "Add ink, canvas, and accent palette presets",
+        "Add display font size",
+        "Add spacing size 80"
+      ],
+      "css": [
+        "Rounded asymmetric image treatment scoped to .is-style-service-hero"
+      ],
+      "uncertainties": [
+        "Exact font family is unknown."
+      ]
+    }
+  ],
+  "responsive": {
+    "source": "desktop and mobile comps",
+    "breakpoint": "theme-defined"
+  },
+  "assumptions": [
+    {
+      "statement": "Hero copy is manually editable rather than sourced from post fields.",
+      "confidence": "medium",
+      "impact": "Pattern remains portable."
+    }
+  ],
+  "customBlockCandidates": [],
+  "additionalCss": [
+    {
+      "selector": ".is-style-service-hero .wp-block-image img",
+      "purpose": "Match the comp's image shape."
+    }
+  ]
+}

@@ -1,0 +1,320 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/wordpress-design.schema.json",
+  "title": "WordPress Design Artifact",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "source",
+    "target",
+    "designTokens",
+    "sections",
+    "assumptions"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "primaryComp"
+      ],
+      "properties": {
+        "primaryComp": {
+          "type": "string"
+        },
+        "mobileComp": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "existingThemeJson": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "viewports": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "width": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "height": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "target": {
+      "type": "object",
+      "required": [
+        "minimumWordPressVersion",
+        "themeJsonVersion",
+        "artifactType",
+        "implementationStrategy",
+        "namespace"
+      ],
+      "properties": {
+        "minimumWordPressVersion": {
+          "type": "string"
+        },
+        "themeJsonVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "artifactType": {
+          "type": "string"
+        },
+        "implementationStrategy": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        }
+      },
+      "additionalProperties": true
+    },
+    "designTokens": {
+      "type": "object",
+      "required": [
+        "colors",
+        "typography",
+        "spacing",
+        "layout"
+      ],
+      "properties": {
+        "colors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/token"
+          }
+        },
+        "typography": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/token"
+          }
+        },
+        "spacing": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/token"
+          }
+        },
+        "layout": {
+          "type": "object"
+        },
+        "shadows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/token"
+          }
+        },
+        "radii": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/token"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "sections": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/section"
+      }
+    },
+    "responsive": {
+      "type": "object"
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/assumption"
+      }
+    },
+    "customBlockCandidates": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "additionalCss": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "$defs": {
+    "token": {
+      "type": "object",
+      "required": [
+        "name",
+        "slug",
+        "value",
+        "status"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "slug": {
+          "type": "string"
+        },
+        "value": {},
+        "status": {
+          "type": "string",
+          "enum": [
+            "reused",
+            "added",
+            "inferred",
+            "proposed"
+          ]
+        },
+        "source": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "blockNode": {
+      "type": "object",
+      "required": [
+        "block"
+      ],
+      "properties": {
+        "block": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*/[a-z][a-z0-9-]*$"
+        },
+        "attributes": {
+          "type": "object"
+        },
+        "role": {
+          "type": "string"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/blockNode"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "section": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "purpose",
+        "implementation",
+        "blockTree"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "purpose": {
+          "type": "string"
+        },
+        "implementation": {
+          "type": "string",
+          "enum": [
+            "core-block-composition",
+            "pattern",
+            "template",
+            "template-part",
+            "query-loop",
+            "block-style",
+            "custom-block-candidate"
+          ]
+        },
+        "blockTree": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/blockNode"
+          }
+        },
+        "contentBehavior": {
+          "type": "string"
+        },
+        "responsiveBehavior": {
+          "type": "object"
+        },
+        "themeJsonChanges": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "css": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "uncertainties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "assumption": {
+      "type": "object",
+      "required": [
+        "statement",
+        "confidence"
+      ],
+      "properties": {
+        "statement": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "string",
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ]
+        },
+        "impact": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

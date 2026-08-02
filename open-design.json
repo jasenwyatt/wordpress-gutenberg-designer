@@ -180,9 +180,7 @@
       }
     ],
     "capabilities": [
-      "prompt:inject",
-      "fs:read",
-      "fs:write"
+      "prompt:inject"
     ]
   }
 }

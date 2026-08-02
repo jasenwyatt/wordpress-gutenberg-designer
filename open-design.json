@@ -180,7 +180,10 @@
       }
     ],
     "capabilities": [
-      "prompt:inject"
+      "prompt:inject",
+      "fs:read",
+      "fs:write",
+      "subprocess"
     ]
   }
 }
